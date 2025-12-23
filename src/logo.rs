@@ -45,7 +45,7 @@ pub fn setup(
         Svg3d(logo),
         Origin::Center,
         Transform {
-            translation: Vec3::new(10000.0, 0.0, -500.0),
+            translation: Vec3::new(0.0, 0.0, -500.0),
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Quat::default(),
         },
@@ -58,7 +58,7 @@ pub fn setup(
         })),
         Origin::Center,
         Transform {
-            translation: Vec3::new(10000.0, 0.0, -501.0),
+            translation: Vec3::new(0.0, 0.0, -501.0),
             scale: Vec3::new(228.0, 228.0, 228.0),
             rotation: Quat::from_rotation_x(PI * 0.5),
         },
