@@ -1,0 +1,47 @@
+[package]
+name = "vj-visualiser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = { version = "0.17.1", features = [
+    "animation",
+    "async_executor",
+    "bevy_animation",
+    "bevy_asset",
+    "bevy_color",
+    "bevy_core_pipeline",
+    "bevy_gilrs",
+    "bevy_gizmos",
+    "bevy_gltf",
+    "bevy_input_focus",
+    "bevy_log",
+    "bevy_mesh_picking_backend",
+    "bevy_pbr",
+    "bevy_picking",
+    "bevy_render",
+    "bevy_scene",
+    "bevy_sprite",
+    "bevy_sprite_picking_backend",
+    "bevy_state",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_ui_picking_backend",
+    "bevy_window",
+    "bevy_winit",
+    "custom_cursor",
+    "default_font",
+    "hdr",
+    "ktx2",
+    "multi_threaded",
+    "png",
+    "smaa_luts",
+    "std",
+    "sysinfo_plugin",
+    "tonemapping_luts",
+    "wayland",
+    "webgl2",
+] }
+pipewire = "0.8.0"
+colored_text = "0.3.0"
+bevy_svg = "0.17.1"

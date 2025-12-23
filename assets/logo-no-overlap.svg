@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="64mm"
+   height="64mm"
+   viewBox="0 0 64 64"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="logo-no-overlap.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   inkscape:export-filename="newlogo.png"
+   inkscape:export-xdpi="839.01935"
+   inkscape:export-ydpi="839.01935"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     showborder="false"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="114.02097"
+     inkscape:cy="112.07643"
+     inkscape:window-width="1280"
+     inkscape:window-height="1412"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1"
+     showgrid="false" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="swatch1052">
+      <stop
+         style="stop-color:#a68400;stop-opacity:1;"
+         offset="0"
+         id="stop1052" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient104-1">
+      <stop
+         style="stop-color:#f63289;stop-opacity:1;"
+         offset="0"
+         id="stop104" />
+      <stop
+         style="stop-color:#e132d9;stop-opacity:1;"
+         offset="0.24233113"
+         id="stop108" />
+      <stop
+         style="stop-color:#a46af4;stop-opacity:1;"
+         offset="0.5"
+         id="stop106" />
+      <stop
+         style="stop-color:#6885f4;stop-opacity:1;"
+         offset="0.77076095"
+         id="stop107" />
+      <stop
+         style="stop-color:#2b99d9;stop-opacity:1;"
+         offset="1"
+         id="stop105" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient104-1"
+       id="linearGradient105"
+       x1="74.574142"
+       y1="82.039574"
+       x2="64.768707"
+       y2="131.86414"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     id="layer1"
+     style="display:inline"
+     transform="translate(-22.768703,-69.864126)"
+     inkscape:export-filename="newlogo.png"
+     inkscape:export-xdpi="839.01935"
+     inkscape:export-ydpi="839.01935">
+    <g
+       id="g122"
+       inkscape:label="Logo">
+      <g
+         id="g12"
+         transform="translate(23.768703,70.864126)"
+         inkscape:label="Outline"
+         style="display:inline">
+        <path
+           style="font-variation-settings:'wght' 215;display:inline;fill:#000000;stroke-width:1"
+           d="M 41.000004,0.99999998 43,-1 H -1 V 63 H 19 L 20.999992,61.000004 1,61.000001 V 0.99999497 Z"
+           id="path9"
+           sodipodi:nodetypes="ccccccccc"
+           inkscape:label="f-outline" />
+        <path
+           style="font-variation-settings:'wght' 215;display:inline;fill:#ffffff;stroke-width:1"
+           d="M 41.000004,0.99999998 43,-1 H 63 V 63 H 19 l 21.999996,-21.999996 8e-6,20.00001 20,-1e-5 -6e-6,-60.00000402 z"
+           id="path8"
+           sodipodi:nodetypes="cccccccccc"
+           inkscape:label="a-outline" />
+      </g>
+      <g
+         id="g121"
+         style="display:inline"
+         inkscape:label="Main Blocks">
+        <path
+           style="font-variation-settings:'wght' 215;display:inline;opacity:1;fill:#000000;stroke:none;stroke-width:1"
+           d="m 44.768695,131.86413 20.000005,-20 -19.999999,-1e-5 z"
+           id="path98"
+           inkscape:label="a-bottom" />
+        <path
+           style="font-variation-settings:'wght' 215;display:inline;opacity:1;fill:#000000;stroke:none;stroke-width:1"
+           d="m 64.768705,131.86414 -5e-6,-20.00001 -19.999996,-20 20.000001,10e-7 3e-6,-20.000005 h 19.999999 v 60.000004 z"
+           id="path99"
+           sodipodi:nodetypes="cccccccc"
+           inkscape:label="a-right" />
+        <path
+           style="font-variation-settings:'wght' 215;display:inline;opacity:1;fill:#ffffff;stroke:none;stroke-width:1"
+           d="M 24.768705,111.86413 V 71.864126 l 40.000003,-2e-6 z"
+           id="path103"
+           inkscape:label="f-top-left" />
+      </g>
+    </g>
+  </g>
+</svg>
