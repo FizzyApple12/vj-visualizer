@@ -5,7 +5,7 @@ pub mod visualizer;
 
 use bevy::prelude::*;
 
-use crate::pipewire::PipewireInput;
+use crate::{audiolink::AudiolinkComputePlugin, pipewire::PipewireInput};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pipewire_input = PipewireInput::new()?;
@@ -13,15 +13,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     App::new()
         .add_plugins((
             DefaultPlugins,
+            AudiolinkComputePlugin,
             MaterialPlugin::<logo::CustomMaterial>::default(),
-            // MaterialPlugin::<audiolink::types::AudiolinkMaterial>::default(),
-            audiolink::AudiolinkComputePlugin,
-            MaterialPlugin::<visualizer::CustomMaterial>::default(),
+            MaterialPlugin::<visualizer::VisualizerMaterial>::default(),
             bevy_svg::prelude::SvgPlugin,
         ))
         .insert_non_send_resource(pipewire_input)
         .add_systems(Startup, (setup, logo::setup, visualizer::setup))
-        // .add_systems(Update, audiolink::update)
+        .add_systems(Update, visualizer::update.after(audiolink::update))
         .run();
 
     Ok(())
