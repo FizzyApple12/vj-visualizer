@@ -84,7 +84,6 @@ pub fn setup(
 
 pub fn update(
     visualizer: Single<&mut Logo>,
-    // time: Res<Time>,
     audiolink_data_texture: Res<AudiolinkDataTexture>,
     mut materials: ResMut<Assets<LogoBackgroundMaterial>>,
 ) {

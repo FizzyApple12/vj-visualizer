@@ -62,13 +62,10 @@ pub fn setup(
             material_handle: visualizer_material,
         },
     ));
-
-    // commands.spawn();
 }
 
 pub fn update(
     mut visualizer: Single<(&mut Visualizer, &mut Transform)>,
-    // time: Res<Time>,
     audiolink_data_texture: Res<AudiolinkDataTexture>,
     mut materials: ResMut<Assets<VisualizerMaterial>>,
     windows: Query<&mut Window>,

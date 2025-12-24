@@ -66,7 +66,5 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let sample_value: f32 = pow(audiolink_sample_lerp_multiline(ALPASS_WAVEFORM + vec2<f32>(f32(distance * SAMPLES_USED / 2), 0.0)).r + 1.0, 2.0) / 2.0;
 
-    // return vec4<f32>(in.uv.x, in.uv.y, 1.0, 1.0);
-    // return textureSample(audiolink_texture, audiolink_sampler, vec2<f32>(in.uv.x, in.uv.y));
     return vec4<f32>(oklab_to_linear_srgb(oklch_to_oklab(vec3<f32>(0.7101, 0.1301, mix(START_HUE, END_HUE, sample_value)))), 1.0);
 }

@@ -6,14 +6,14 @@
 const ALPASS_DFT = vec2<f32>(0.0, 4.0);
 const ALPASS_WAVEFORM = vec2<f32>(0.0, 6.0);
 
-const SAMPLES_USED = 2048.0;
-
 const AUDIOLINK_WIDTH = 128;
 const AUDIOLINK_HEIGHT = 64;
 
 const AUDIOLINK_EXPBINS = 24;
 const AUDIOLINK_EXPOCT = 10;
 const AUDIOLINK_ETOTALBINS = (AUDIOLINK_EXPBINS * AUDIOLINK_EXPOCT);
+
+const SAMPLES_USED = 2048.0;
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(0) var audiolink_texture: texture_2d<f32>;
 @group(#{MATERIAL_BIND_GROUP}) @binding(1) var audiolink_sampler: sampler;
@@ -106,6 +106,4 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let power: vec3<f32> = get_audio_power(in.uv);
 
     return vec4<f32>(power, 1.0);
-    // return textureSample(audiolink_texture, audiolink_sampler, vec2<f32>(in.uv.x, in.uv.y)) + vec4<f32>(power, 1.0);
-    // return textureSample(audiolink_texture, audiolink_sampler, vec2<f32>(in.uv.x, in.uv.y));
 }

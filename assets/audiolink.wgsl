@@ -3,9 +3,6 @@ const TWO_PI = 6.28318530718;
 const ALPASS_DFT = vec2<i32>(0, 4);
 const ALPASS_WAVEFORM = vec2<i32>(0, 6);
 
-// const TEXEL_WIDTH = 128;
-// const TEXEL_HEIGHT = 64;
-
 const AUDIOLINK_SAMPHIST = 3069;
 const AUDIOLINK_EXPBINS = 24;
 const AUDIOLINK_EXPOCT = 10;
@@ -45,10 +42,6 @@ const AUDIOLINK_LUT = array<f32, 240>(
 
 @group(0) @binding(2) var<storage, read> audiolink_data_audio_data: array<vec4<f32>, 4096>;
 
-// @group(0) @binding(3) var<uniform> audiolink_data_gain: f32;
-// @group(0) @binding(4) var<uniform> audiolink_data_bass: f32;
-// @group(0) @binding(5) var<uniform> audiolink_data_trebble: f32;
-// @group(0) @binding(6) var<uniform> audiolink_data_fade_length: f32;
 @group(0) @binding(3) var<uniform> audiolink_uniforms: AudiolinkUniforms;
 
 struct AudiolinkUniforms {
