@@ -14,16 +14,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugins((
             DefaultPlugins,
             MaterialPlugin::<logo::CustomMaterial>::default(),
-            MaterialPlugin::<audiolink::types::AudiolinkMaterial>::default(),
+            // MaterialPlugin::<audiolink::types::AudiolinkMaterial>::default(),
+            audiolink::AudiolinkComputePlugin,
             MaterialPlugin::<visualizer::CustomMaterial>::default(),
             bevy_svg::prelude::SvgPlugin,
         ))
         .insert_non_send_resource(pipewire_input)
-        .add_systems(
-            Startup,
-            (setup, logo::setup, audiolink::setup, visualizer::setup),
-        )
-        .add_systems(Update, audiolink::update)
+        .add_systems(Startup, (setup, logo::setup, visualizer::setup))
+        // .add_systems(Update, audiolink::update)
         .run();
 
     Ok(())

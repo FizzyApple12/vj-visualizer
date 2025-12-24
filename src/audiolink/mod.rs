@@ -1,119 +1,82 @@
-pub mod types;
-
-use std::f32::consts::PI;
-
 use bevy::{
-    asset::{Assets, RenderAssetUsages},
-    ecs::system::{Commands, NonSend, Query, Res, ResMut},
-    image::{Image, ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor},
-    math::{Quat, Vec3, primitives::Plane3d},
-    mesh::{Mesh, Mesh3d},
-    pbr::MeshMaterial3d,
+    asset::RenderAssetUsages,
+    prelude::*,
     render::{
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
+        Render, RenderApp, RenderStartup, RenderSystems,
+        extract_resource::{ExtractResource, ExtractResourcePlugin},
+        render_asset::RenderAssets,
+        render_graph::{self, RenderGraph, RenderLabel},
+        render_resource::{
+            binding_types::{texture_storage_2d, uniform_buffer},
+            *,
+        },
+        renderer::{RenderContext, RenderDevice, RenderQueue},
         storage::ShaderStorageBuffer,
+        texture::GpuImage,
     },
-    time::Time,
-    transform::components::Transform,
+    shader::PipelineCacheError,
 };
-use bevy_svg::prelude::Origin;
 use colored_text::Colorize;
+use std::borrow::Cow;
 
-use crate::{
-    audiolink::types::{
-        Audiolink, AudiolinkDataTexture, AudiolinkMaterial, AudiolinkMaterialHandle,
-    },
-    pipewire::PipewireInput,
-};
+use crate::pipewire::PipewireInput;
 
 pub const SHADER_ASSET_PATH: &str = "audiolink.wgsl";
+
 pub const SAMPLE_HISTORY: usize = 4096;
+
+pub const AUDIOLINK_WIDTH: u32 = 128;
+pub const AUDIOLINK_HEIGHT: u32 = 64;
+
+pub const WORKGROUP_SIZE: u32 = 8;
+
+#[derive(Component)]
+pub struct Audiolink {
+    pub cursor_move: bool,
+
+    pub left_smoothed_max: f32,
+    pub left_on_alternate_sample: bool,
+    pub left_full_rate_buffer: Vec<f32>,
+    pub left_half_rate_buffer: Vec<f32>,
+
+    pub right_smoothed_max: f32,
+    pub right_on_alternate_sample: bool,
+    pub right_full_rate_buffer: Vec<f32>,
+    pub right_half_rate_buffer: Vec<f32>,
+}
+
+#[derive(Clone, Resource)]
+pub struct AudiolinkDataTexture(pub Handle<Image>);
 
 pub fn setup(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
+    // mut meshes: ResMut<Assets<Mesh>>,
     mut images: ResMut<Assets<Image>>,
-    mut materials: ResMut<Assets<AudiolinkMaterial>>,
-    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+    // mut materials: ResMut<Assets<AudiolinkMaterial>>,
+    // mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
 ) {
-    let mut audiolink_data_texture = Image::new_uninit(
-        Extent3d {
-            width: 128,
-            height: 64,
-            depth_or_array_layers: 1,
-        },
-        TextureDimension::D2,
+    let mut image = Image::new_target_texture(
+        AUDIOLINK_WIDTH,
+        AUDIOLINK_HEIGHT,
         TextureFormat::Rgba32Float,
-        RenderAssetUsages::default(),
     );
+    image.asset_usage = RenderAssetUsages::RENDER_WORLD;
+    image.texture_descriptor.usage =
+        TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
 
-    audiolink_data_texture.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-        label: Some("audiolink data texture image sampler".to_owned()),
-        address_mode_u: ImageAddressMode::Repeat,
-        address_mode_v: ImageAddressMode::Repeat,
-        mag_filter: ImageFilterMode::Nearest,
-        min_filter: ImageFilterMode::Nearest,
-        mipmap_filter: ImageFilterMode::Nearest,
-        lod_min_clamp: 1.0,
-        lod_max_clamp: 1.0,
-        compare: None,
-        anisotropy_clamp: 1,
-        ..ImageSamplerDescriptor::default()
+    let image_a = images.add(image.clone());
+    let image_b = images.add(image);
+
+    commands.insert_resource(AudiolinkDataTexture(image_a.clone()));
+
+    commands.insert_resource(AudiolinkImages {
+        texture_a: image_a,
+        texture_b: image_b,
     });
 
-    let audiolink_data_texture_handle = images.add(audiolink_data_texture);
-
-    commands.insert_resource(AudiolinkDataTexture(audiolink_data_texture_handle.clone()));
-
-    let audiolink_data_lut: [f32; 240] = [
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.001,
-        0.002, 0.003, 0.004, 0.005, 0.006, 0.008, 0.01, 0.012, 0.014, 0.017, 0.02, 0.022, 0.025,
-        0.029, 0.032, 0.036, 0.04, 0.044, 0.048, 0.053, 0.057, 0.062, 0.067, 0.072, 0.078, 0.083,
-        0.089, 0.095, 0.101, 0.107, 0.114, 0.121, 0.128, 0.135, 0.142, 0.149, 0.157, 0.164, 0.172,
-        0.18, 0.188, 0.196, 0.205, 0.213, 0.222, 0.23, 0.239, 0.248, 0.257, 0.266, 0.276, 0.285,
-        0.294, 0.304, 0.313, 0.323, 0.333, 0.342, 0.352, 0.362, 0.372, 0.381, 0.391, 0.401, 0.411,
-        0.421, 0.431, 0.441, 0.451, 0.46, 0.47, 0.48, 0.49, 0.499, 0.509, 0.519, 0.528, 0.538,
-        0.547, 0.556, 0.565, 0.575, 0.584, 0.593, 0.601, 0.61, 0.619, 0.627, 0.636, 0.644, 0.652,
-        0.66, 0.668, 0.676, 0.684, 0.691, 0.699, 0.706, 0.713, 0.72, 0.727, 0.734, 0.741, 0.747,
-        0.754, 0.76, 0.766, 0.772, 0.778, 0.784, 0.79, 0.795, 0.801, 0.806, 0.811, 0.816, 0.821,
-        0.826, 0.831, 0.835, 0.84, 0.844, 0.848, 0.853, 0.857, 0.861, 0.864, 0.868, 0.872, 0.875,
-        0.879, 0.882, 0.885, 0.888, 0.891, 0.894, 0.897, 0.899, 0.902, 0.904, 0.906, 0.909, 0.911,
-        0.913, 0.914, 0.916, 0.918, 0.919, 0.921, 0.922, 0.924, 0.925, 0.926, 0.927, 0.928, 0.928,
-        0.929, 0.929, 0.93, 0.93, 0.93, 0.931, 0.931, 0.93, 0.93, 0.93, 0.93, 0.929, 0.929, 0.928,
-        0.927, 0.926, 0.925, 0.924, 0.923, 0.922, 0.92, 0.919, 0.917, 0.915, 0.913, 0.911, 0.909,
-        0.907, 0.905, 0.903, 0.9,
-    ];
-    let audiolink_data_audio_data: [[f32; 4]; SAMPLE_HISTORY] =
-        core::array::from_fn(|_| [0.0, 0.0, 0.0, 0.0]);
-
-    let audiolink_data_lut = buffers.add(ShaderStorageBuffer::from(audiolink_data_lut));
-    let audiolink_data_audio_data =
-        buffers.add(ShaderStorageBuffer::from(audiolink_data_audio_data));
-
-    let audiolink_material_handle = materials.add(AudiolinkMaterial {
-        self_texture: audiolink_data_texture_handle,
-
-        audiolink_data_gain: 1.0,
-        audiolink_data_bass: 1.0,
-        audiolink_data_trebble: 1.0,
-        audiolink_data_fade_length: 0.8,
-        audiolink_data_lut,
-        audiolink_data_audio_data,
+    commands.insert_resource(AudiolinkUniforms {
+        alive_color: LinearRgba::RED,
     });
-    commands.insert_resource(AudiolinkMaterialHandle(audiolink_material_handle.clone()));
-
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default())),
-        MeshMaterial3d(audiolink_material_handle),
-        Origin::Center,
-        Transform {
-            translation: Vec3::new(0.0, 0.0, -1000.0),
-            scale: Vec3::new(750.0, 750.0, 750.0),
-            rotation: Quat::from_rotation_x(PI * 0.5),
-        },
-    ));
 
     commands.spawn(Audiolink {
         cursor_move: false,
@@ -134,12 +97,20 @@ pub fn setup(
 pub fn update(
     time: Res<Time>,
     pipewire_input: NonSend<PipewireInput>,
-    audiolink_material_handles: Res<AudiolinkMaterialHandle>,
-    audiolink_data_texture: Res<AudiolinkDataTexture>,
-    mut materials: ResMut<Assets<AudiolinkMaterial>>,
+    images: Res<AudiolinkImages>,
+    // mut sprite: Single<&mut Sprite>,
+    // audiolink_material_handles: Res<AudiolinkMaterialHandle>,
+    mut audiolink_data_texture: ResMut<AudiolinkDataTexture>,
+    // mut materials: ResMut<Assets<AudiolinkMaterial>>,
     mut query: Query<&mut Audiolink>,
-    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+    // mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
 ) {
+    if audiolink_data_texture.0 == images.texture_a {
+        audiolink_data_texture.0 = images.texture_b.clone();
+    } else {
+        audiolink_data_texture.0 = images.texture_a.clone();
+    }
+
     if let Ok(mut audiolink) = query.single_mut() {
         let delta_time = time.delta_secs();
 
@@ -196,11 +167,11 @@ pub fn update(
         let mut left_max: f32 = 0.0;
         let mut right_max: f32 = 0.0;
 
-        let material = materials.get_mut(&audiolink_material_handles.0).unwrap();
+        // let material = materials.get_mut(&audiolink_material_handles.0).unwrap();
 
-        let audio_data_buffer = buffers
-            .get_mut(&material.audiolink_data_audio_data)
-            .unwrap();
+        // let audio_data_buffer = buffers
+        //     .get_mut(&material.audiolink_data_audio_data)
+        //     .unwrap();
 
         let mut new_audiolink_data_audio_data: [[f32; 4]; SAMPLE_HISTORY] =
             [[0.0; 4]; SAMPLE_HISTORY];
@@ -239,7 +210,7 @@ pub fn update(
             ];
         }
 
-        audio_data_buffer.set_data(new_audiolink_data_audio_data);
+        // audio_data_buffer.set_data(new_audiolink_data_audio_data);
 
         print_vu(
             " Left",
@@ -305,4 +276,236 @@ fn print_vu(name: &str, max: f32, smoothed_max: &mut f32, delta_time: f32) {
         *smoothed_max
     );
     println!();
+}
+
+pub struct AudiolinkComputePlugin;
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
+pub struct AudiolinkLabel;
+
+impl Plugin for AudiolinkComputePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            ExtractResourcePlugin::<AudiolinkImages>::default(),
+            ExtractResourcePlugin::<AudiolinkUniforms>::default(),
+        ))
+        .add_systems(Startup, setup)
+        .add_systems(Update, update);
+
+        let render_app = app.sub_app_mut(RenderApp);
+        render_app
+            .add_systems(RenderStartup, init_audiolink_pipeline)
+            .add_systems(
+                Render,
+                prepare_bind_group.in_set(RenderSystems::PrepareBindGroups),
+            );
+
+        let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
+        render_graph.add_node(AudiolinkLabel, AudiolinkNode::default());
+        render_graph.add_node_edge(AudiolinkLabel, bevy::render::graph::CameraDriverLabel);
+    }
+}
+
+#[derive(Resource, Clone, ExtractResource)]
+pub struct AudiolinkImages {
+    texture_a: Handle<Image>,
+    texture_b: Handle<Image>,
+}
+
+#[derive(Resource, Clone, ExtractResource, ShaderType)]
+pub struct AudiolinkUniforms {
+    alive_color: LinearRgba,
+}
+
+#[derive(Resource)]
+
+pub struct AudiolinkImageBindGroups([BindGroup; 2]);
+
+fn prepare_bind_group(
+    mut commands: Commands,
+    pipeline: Res<AudiolinkPipeline>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
+    audiolink_images: Res<AudiolinkImages>,
+    audiolink_uniforms: Res<AudiolinkUniforms>,
+    render_device: Res<RenderDevice>,
+    queue: Res<RenderQueue>,
+) {
+    let view_a = gpu_images.get(&audiolink_images.texture_a).unwrap();
+    let view_b = gpu_images.get(&audiolink_images.texture_b).unwrap();
+
+    let mut uniform_buffer = UniformBuffer::from(audiolink_uniforms.into_inner());
+    uniform_buffer.write_buffer(&render_device, &queue);
+
+    let bind_group_a_to_b = render_device.create_bind_group(
+        None,
+        &pipeline.texture_bind_group_layout,
+        &BindGroupEntries::sequential((
+            &view_a.texture_view,
+            &view_b.texture_view,
+            &uniform_buffer,
+        )),
+    );
+    let bind_group_b_to_a = render_device.create_bind_group(
+        None,
+        &pipeline.texture_bind_group_layout,
+        &BindGroupEntries::sequential((
+            &view_b.texture_view,
+            &view_a.texture_view,
+            &uniform_buffer,
+        )),
+    );
+
+    commands.insert_resource(AudiolinkImageBindGroups([
+        bind_group_a_to_b,
+        bind_group_b_to_a,
+    ]));
+}
+
+#[derive(Resource)]
+pub struct AudiolinkPipeline {
+    texture_bind_group_layout: BindGroupLayout,
+    init_pipeline: CachedComputePipelineId,
+    update_pipeline: CachedComputePipelineId,
+}
+
+fn init_audiolink_pipeline(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    pipeline_cache: Res<PipelineCache>,
+    render_device: Res<RenderDevice>,
+) {
+    let texture_bind_group_layout = render_device.create_bind_group_layout(
+        "AudiolinkImages",
+        &BindGroupLayoutEntries::sequential(
+            ShaderStages::COMPUTE,
+            (
+                texture_storage_2d(TextureFormat::Rgba32Float, StorageTextureAccess::ReadOnly),
+                texture_storage_2d(TextureFormat::Rgba32Float, StorageTextureAccess::WriteOnly),
+                uniform_buffer::<AudiolinkUniforms>(false),
+            ),
+        ),
+    );
+
+    let shader = asset_server.load(SHADER_ASSET_PATH);
+
+    let init_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+        layout: vec![texture_bind_group_layout.clone()],
+        shader: shader.clone(),
+        entry_point: Some(Cow::from("init")),
+        ..default()
+    });
+
+    let update_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+        layout: vec![texture_bind_group_layout.clone()],
+        shader,
+        entry_point: Some(Cow::from("update")),
+        ..default()
+    });
+
+    commands.insert_resource(AudiolinkPipeline {
+        texture_bind_group_layout,
+        init_pipeline,
+        update_pipeline,
+    });
+}
+
+pub enum AudiolinkState {
+    Loading,
+    Init,
+    Update(usize),
+}
+
+pub struct AudiolinkNode {
+    state: AudiolinkState,
+}
+
+impl Default for AudiolinkNode {
+    fn default() -> Self {
+        Self {
+            state: AudiolinkState::Loading,
+        }
+    }
+}
+
+impl render_graph::Node for AudiolinkNode {
+    fn update(&mut self, world: &mut World) {
+        let pipeline = world.resource::<AudiolinkPipeline>();
+        let pipeline_cache = world.resource::<PipelineCache>();
+
+        match self.state {
+            AudiolinkState::Loading => {
+                match pipeline_cache.get_compute_pipeline_state(pipeline.init_pipeline) {
+                    CachedPipelineState::Ok(_) => {
+                        self.state = AudiolinkState::Init;
+                    }
+                    CachedPipelineState::Err(PipelineCacheError::ShaderNotLoaded(_)) => {}
+                    CachedPipelineState::Err(err) => {
+                        panic!("Initializing assets/{SHADER_ASSET_PATH}:\n{err}")
+                    }
+                    _ => {}
+                }
+            }
+            AudiolinkState::Init => {
+                if let CachedPipelineState::Ok(_) =
+                    pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline)
+                {
+                    self.state = AudiolinkState::Update(1);
+                }
+            }
+            AudiolinkState::Update(0) => {
+                self.state = AudiolinkState::Update(1);
+            }
+            AudiolinkState::Update(1) => {
+                self.state = AudiolinkState::Update(0);
+            }
+            AudiolinkState::Update(_) => unreachable!(),
+        }
+    }
+
+    fn run(
+        &self,
+        _graph: &mut render_graph::RenderGraphContext,
+        render_context: &mut RenderContext,
+        world: &World,
+    ) -> Result<(), render_graph::NodeRunError> {
+        let bind_groups = &world.resource::<AudiolinkImageBindGroups>().0;
+        let pipeline_cache = world.resource::<PipelineCache>();
+        let pipeline = world.resource::<AudiolinkPipeline>();
+
+        let mut pass = render_context
+            .command_encoder()
+            .begin_compute_pass(&ComputePassDescriptor::default());
+
+        match self.state {
+            AudiolinkState::Loading => {}
+            AudiolinkState::Init => {
+                let init_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipeline.init_pipeline)
+                    .unwrap();
+
+                pass.set_bind_group(0, &bind_groups[0], &[]);
+                pass.set_pipeline(init_pipeline);
+                pass.dispatch_workgroups(
+                    AUDIOLINK_WIDTH / WORKGROUP_SIZE,
+                    AUDIOLINK_HEIGHT / WORKGROUP_SIZE,
+                    1,
+                );
+            }
+            AudiolinkState::Update(index) => {
+                let update_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipeline.update_pipeline)
+                    .unwrap();
+
+                pass.set_bind_group(0, &bind_groups[index], &[]);
+                pass.set_pipeline(update_pipeline);
+                pass.dispatch_workgroups(
+                    AUDIOLINK_WIDTH / WORKGROUP_SIZE,
+                    AUDIOLINK_HEIGHT / WORKGROUP_SIZE,
+                    1,
+                );
+            }
+        }
+
+        Ok(())
+    }
 }
