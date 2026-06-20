@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.17.1", features = [
+bevy = { version = "0.17", features = [
     "animation",
     "async_executor",
     "bevy_animation",
@@ -42,6 +42,6 @@ bevy = { version = "0.17.1", features = [
     "wayland",
     "webgl2",
 ] }
-pipewire = "0.8.0"
-colored_text = "0.3.0"
-bevy_svg = "0.17.1"
+pipewire = "0.10"
+colored_text = "0.3"
+bevy_svg = "0.17"

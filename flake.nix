@@ -7,18 +7,13 @@
   };
 
   outputs = {
-    self,
     nixpkgs,
     flake-utils,
+    ...
   }:
     flake-utils.lib.eachDefaultSystem (
       system: let
         pkgs = nixpkgs.legacyPackages.${system};
-        libPath = with pkgs;
-          lib.makeLibraryPath [
-            systemd
-            openssl
-          ];
       in {
         devShells.default = pkgs.mkShell rec {
           nativeBuildInputs = with pkgs; [
@@ -42,10 +37,10 @@
             vulkan-loader
             vulkan-tools
             pipewire
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
+            libX11
+            libXcursor
+            libXi
+            libXrandr
 
             zed-editor
           ];
